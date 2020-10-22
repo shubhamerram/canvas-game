@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<style type="text/css">
+		canvas {
+			margin: -3; 
+			padding: 0;
+		}
+	</style>
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+</body>
+
+<script type="text/javascript">
+	window.onload = function() {
+		console.log(window.screen.width);
+		var canvas = document.getElementById('game-canvas');
+		canvas.setAttribute('width',window.screen.width - 20);
+		canvas.setAttribute('height',window.screen.height - 150);
+		var canvasContext = canvas.getContext('2d');
+		var boardY = canvas.height / 2;
+		var boardX = 0;
+		var boardDirectionY = 15.00;
+		var boardDirectionX = 14.00;
+		var boardHeight = 30;
+		var boardwidth = 50;
+		var bullets = [];
+		var aliens = [];
+		var topScore = 0;
+		var alienSpeed = 0.9;
+
+
+
+
+
+		var mainInterval = setInterval(function() {
+			loadCanvas();
+		},1);
+
+		var alienInterval = setInterval(function() {
+			aliens.push(new alien());
+		},1000)
+		var alienSpeedIntervals = setInterval( function() {
+			alienSpeed = alienSpeed + 0.01;
+		},10000)
+		document.addEventListener('keydown', function(event) {
+			boardMovement(event);
+			shoot(event);
+		})
+
+
+		function boardMovement(event) {
+			// console.log(event.keyCode);
+			if(event.keyCode == 40 && boardY < canvas.height- (boardHeight * 2 )) {
+				boardY = boardY + boardDirectionY;
+			}
+			if(event.keyCode == 38 && boardY > 10) {
+				boardY = boardY - boardDirectionY;
+			}
+			if(event.keyCode == 39 && boardX < canvas.width- boardwidth * 2) {
+				boardX = boardX + boardDirectionX;
+			}
+			if(event.keyCode == 37 && boardX >  0) {
+				boardX = boardX - boardDirectionX;
+			}
+
+			if(event.keyCode == 76 ) {
+				aliens.push(new alien());	
+			} 
+		}
+
+
+		function loadCanvas() {
+			canvasContext.fillStyle = "black";
+			var bg = new Image();
+			bg.src = './bg.jpg'
+			canvasContext.drawImage(bg,0,0,canvas.width,canvas.height);
+			img = new Image();
+			img.src = './player.png';
+			canvasContext.drawImage(img,boardX,boardY,boardwidth,boardHeight);
+			// console.log(alienSpeed);
+			updateScore();
+			loadBullets();
+			loadAliens();
+			removeAliens();
+
+			// console.log('aliens',aliens.length)
+
+		}
+
+		function shoot(event) {
+			if(event.keyCode == 83) {
+				bullets.push(new bullet(boardX ,boardY));
+				bullets.push(new bullet(boardX,boardY + boardHeight));
+			}
+		}
+
+		function bullet(x,y) {
+			this.x = x + boardwidth;
+			this.y = y;
+			this.create = function() {
+				canvasContext.fillStyle = 'red';
+				canvasContext.fillRect(this.x,this.y,3,3);
+			}
+			this.update = function() {
+				this.x += 0.6;
+			}
+		}
+
+		function loadBullets() {
+			bullets.forEach(function(val,index) {
+				if(val.x > canvas.width) {
+					removeBullets(index);
+				} else {
+					val.create();
+					val.update();
+				}
+			})
+		}
+
+		function removeBullets(index) {
+			bullets.splice(index,1)
+		}
+		
+
+		function alien() {
+			
+			this.lifeCompete = 0;
+			this.height = 30;
+			this.width = 50
+			this.x = canvas.width+10;
+			this.y = Math.floor(Math.random() * (canvas.height - this.height));
+			// this.y = boardY;
+			this.create = function() {
+				img = new Image();
+				img.src = './aliens.png';
+				canvasContext.drawImage(img,this.x,this.y,this.width,this.height);
+			}
+			this.update = function() {
+				this.x = this.x - alienSpeed / 2;
+				if(this.x < 0) {
+					this.lifeCompete = 1;
+				}
+			}
+			this.checkHit = function() {
+				if( (Math.round(boardX + boardwidth) > Math.round(this.x)  && Math.round(boardX - boardwidth) < Math.round(this.x))
+					&&
+					(Math.round(boardY + boardHeight) > Math.round(this.y)  && Math.round(boardY - boardHeight) < Math.round(this.y))
+				 	){
+					clearInterval(mainInterval);
+					clearInterval(alienInterval);
+				}
+			}
+			this.isShooted = function() {
+				bullets.find((val) => {
+					// console.log(val.x);
+					if((Math.round(val.x) > Math.round(this.x)  && Math.round(val.x ) < Math.round(this.x + this.width))
+					&&
+					(Math.round(val.y) > Math.round(this.y - 5)  && Math.round(val.y) < Math.round(this.y + this.height))) {
+						index = bullets.indexOf(val);
+						bullets.splice(index,1);
+						this.lifeCompete =1;
+						topScore++;
+						return true
+					}
+				})
+			}
+		}
+
+		function loadAliens() {
+			aliens.forEach(function(val,index) {
+					val.create();
+					val.isShooted();
+					val.update();
+					val.checkHit();
+			})
+		}
+
+		function removeAliens(index) {
+			aliens.forEach( function(val, index) {
+				if(val.lifeCompete === 1) {
+					aliens.splice(index,1);
+				}
+			}) 
+		}
+
+		function updateScore() {
+			canvasContext.font="20px serif";
+			canvasContext.fillStyle = 'red';
+			canvasContext.fillText('Score: '+topScore, canvas.width / 2 - 50, 30);
+		}
+	
+		
+		
+	}
+
+	
+</script>
+</html>
